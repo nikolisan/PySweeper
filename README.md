@@ -1,3 +1,5 @@
-*PySweeper* 
+**PySweeper
+
 A simple minesweeper implementation using PyGame 
-Work under development
+
+*Work under development
