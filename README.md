@@ -1,5 +1,5 @@
-**PySweeper**
+# PySweeper
 
 A simple minesweeper implementation using PyGame 
 
-*Work under development*
+<sup>Work under development</sup>
