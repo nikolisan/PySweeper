@@ -1,7 +1,58 @@
 from random import randint
-from .Tile import Tile
-from .utilities import *
+from src.GameState import GameState
+from src.Tile import Tile
+from src.utilities import *
 import time
+
+
+
+def set_difficulty(gs:GameState):
+    difficulties = {
+        "EASY": {
+            "NUM_BOMBS" : 10,
+            "GRID_SIZE" : (9, 9),
+            "CELL_SIZE" : 60
+        },
+        "MEDIUM": {
+            "NUM_BOMBS" : 40,
+            "GRID_SIZE" : (16, 16),
+            "CELL_SIZE" : 40
+        },
+        "HARD": {
+            "NUM_BOMBS" : 99,
+            "GRID_SIZE" : (30, 16),
+            "CELL_SIZE" : 30
+        }
+    }
+    
+    gs.NUM_BOMBS = difficulties[gs.difficulty]["NUM_BOMBS"]
+    gs.GRID_SIZE = difficulties[gs.difficulty]["GRID_SIZE"]
+    gs.CELL_SIZE = difficulties[gs.difficulty]["CELL_SIZE"]
+
+    
+
+
+def new_game(gs:GameState):
+    
+    gs.marked_bombs = 0
+    
+    
+    set_difficulty(gs) 
+
+    gs.WINDOW_SIZE = (gs.GRID_SIZE[0] * gs.CELL_SIZE, gs.GRID_SIZE[1] * gs.CELL_SIZE + 200)
+    
+    gs.screen = pygame.display.set_mode(gs.WINDOW_SIZE)
+    gs.screen.fill(colors.mainbg)
+    gs.FONT_SIZE = int(gs.CELL_SIZE / 2)
+    gs.FONT = pygame.font.SysFont("Arial", gs.FONT_SIZE)
+
+    gs.grid = create_grid(gs.GRID_SIZE, gs.NUM_BOMBS)
+    gs.grid = adjacent_bombs(gs.grid, gs.GRID_SIZE)
+    draw_grid(gs.grid, gs.screen, gs.CELL_SIZE)
+
+    pygame.display.set_caption(f"PySweeper - {gs.difficulty} - Bombs: {str(gs.marked_bombs).zfill(2)}/{gs.NUM_BOMBS}")
+    pygame.display.flip()
+
 
 
 def create_grid(GRID_SIZE, NUM_BOMBS):
@@ -55,7 +106,7 @@ def reveal_zeros(x, y, grid, screen, CELL_SIZE, FONT, GRID_SIZE):
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 if dx != 0 or dy != 0:
-                    reveal_zeros(x + dx, y + dy, grid, screen, CELL_SIZE, FONT)
+                    reveal_zeros(x + dx, y + dy, grid, screen, CELL_SIZE, FONT, GRID_SIZE)
     else:
         label, label_rect = text_objects(str(grid[x][y].label), FONT, colors.black, colors.white)
         label_rect.center = (y * CELL_SIZE + CELL_SIZE / 2, x * CELL_SIZE + CELL_SIZE / 2)
@@ -77,7 +128,7 @@ def reveal_adjacent(x, y, grid, screen, CELL_SIZE, FONT, GRID_SIZE):
                     print("Game Over")
                     return
                 else:
-                    reveal_zeros(x + dx, y + dy, grid, screen, CELL_SIZE, FONT)
+                    reveal_zeros(x + dx, y + dy, grid, screen, CELL_SIZE, FONT, GRID_SIZE)
                 
 
 

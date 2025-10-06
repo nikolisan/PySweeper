@@ -1,110 +1,97 @@
 import sys
+from src.GameState import GameState
 from src.game import *
 from src.utilities import *
 
-current_difficulty = "MEDIUM"
 
-def new_game():
-    # global grid, marked_bombs, NUM_BOMBS, CELL_SIZE, WINDOW_SIZE, BG_COLOR, FONT, screen
-    marked_bombs = 0
-
-    NUM_BOMBS = difficulty[current_difficulty]["NUM_BOMBS"]
-    GRID_SIZE = difficulty[current_difficulty]["GRID_SIZE"]
-    CELL_SIZE = difficulty[current_difficulty]["CELL_SIZE"]
-    WINDOW_SIZE = (GRID_SIZE[0] * CELL_SIZE + 200, GRID_SIZE[1] * CELL_SIZE)
-    print(GRID_SIZE, CELL_SIZE, WINDOW_SIZE)
-    BG_COLOR = colors.mainbg
-    screen = pygame.display.set_mode(WINDOW_SIZE)
-    FONT_SIZE = int(CELL_SIZE / 2)
-    FONT = pygame.font.SysFont("Arial", FONT_SIZE)
-    screen.fill(BG_COLOR)
-
-    grid = create_grid(GRID_SIZE, NUM_BOMBS)
-    grid = adjacent_bombs(grid, GRID_SIZE)
-    draw_grid(grid, screen, CELL_SIZE)
-    draw_difficulty_menu(current_difficulty, screen, FONT)
-    label, label_rect = text_objects(f"{str(marked_bombs).zfill(2)}/{NUM_BOMBS}", FONT, colors.black, BG_COLOR)
-    label_rect = (WINDOW_SIZE[0] - 180, 120)
-    screen.blit(label, label_rect)
-    pygame.display.update()
-
-
-    return NUM_BOMBS, CELL_SIZE, GRID_SIZE, WINDOW_SIZE, FONT, screen, grid
-
-
-def mouse_press(event, grid, GRID_SIZE):
+def mouse_press(event, gs:GameState):
     global marked_bombs
     # pos = (x, y)
     # Button: 1 -> Left, 3 -> Right, 2 -> middle
     pos = event.pos
     button = event.button
-    mouseY = int(pos[0] / CELL_SIZE)
-    mouseX = int(pos[1] / CELL_SIZE)
-    mouseY_to_size = mouseY * CELL_SIZE
-    mouseX_to_size = mouseX * CELL_SIZE
+    mouseY = int(pos[0] / gs.CELL_SIZE)
+    mouseX = int(pos[1] / gs.CELL_SIZE)
+    mouseY_to_size = mouseY * gs.CELL_SIZE
+    mouseX_to_size = mouseX * gs.CELL_SIZE
 
-    if inGrid(mouseX, mouseY, GRID_SIZE):
+    if inGrid(mouseX, mouseY, gs.GRID_SIZE):
         if button == 1:
-            if grid[mouseX][mouseY].bomb:
-                for i, row in enumerate(grid):
+            if gs.grid[mouseX][mouseY].bomb:
+                for i, row in enumerate(gs.grid):
                     for j, tile in enumerate(row):
                         if tile.bomb:
-                            colour_cell(i, j, colors.red, screen=screen, CELL_SIZE=CELL_SIZE)
+                            colour_cell(i, j, colors.red, screen=gs.screen, CELL_SIZE=gs.CELL_SIZE)
+                pygame.draw.rect(gs.screen, colors.dark_red, (gs.WINDOW_SIZE[0] - gs.WINDOW_SIZE[0] // 2 - 150 , gs.WINDOW_SIZE[1] - gs.WINDOW_SIZE[1] //2 - 200, 300, 200), 0)
+                pygame.draw.rect(gs.screen, colors.black, (gs.WINDOW_SIZE[0] - gs.WINDOW_SIZE[0] // 2 - 150 , gs.WINDOW_SIZE[1] - gs.WINDOW_SIZE[1] //2 - 200, 300, 200), 1)
                 pygame.display.update()
-                print("Game Over")
                 return
-            elif grid[mouseX][mouseY].revealed:
+            elif gs.grid[mouseX][mouseY].revealed:
                 marked = 0
                 for (dx, dy) in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]:
-                    if inGrid(mouseX + dx, mouseY+ dy, GRID_SIZE) and grid[mouseX + dx][mouseY+ dy].marked:
+                    if inGrid(mouseX + dx, mouseY+ dy, gs.GRID_SIZE) and gs.grid[mouseX + dx][mouseY+ dy].marked:
                         marked += 1
-                if marked >= int(grid[mouseX][mouseY].label):
-                    reveal_adjacent(mouseX, mouseY, grid, screen, CELL_SIZE, FONT, GRID_SIZE)
-                    if check_win(grid):
-                        for i, row in enumerate(grid):
+                if marked >= int(gs.grid[mouseX][mouseY].label):
+                    reveal_adjacent(mouseX, mouseY, gs.grid, gs.screen, gs.CELL_SIZE, gs.FONT, gs.GRID_SIZE)
+                    if check_win(gs.grid):
+                        for i, row in enumerate(gs.grid):
                             for j, tile in enumerate(row):
                                 if tile.bomb:
-                                    colour_cell(i, j, colors.green, screen=screen, CELL_SIZE=CELL_SIZE)
-                        print("You Win!")
+                                    colour_cell(i, j, colors.green,screen=gs.screen, CELL_SIZE=gs.CELL_SIZE)
+                        pygame.draw.rect(gs.screen, colors.dark_green, (gs.WINDOW_SIZE[0] - gs.WINDOW_SIZE[0] // 2 - 150 , gs.WINDOW_SIZE[1] - gs.WINDOW_SIZE[1] //2 - 200, 300, 200), 0)
+                        pygame.draw.rect(gs.screen, colors.black, (gs.WINDOW_SIZE[0] - gs.WINDOW_SIZE[0] // 2 - 150 , gs.WINDOW_SIZE[1] - gs.WINDOW_SIZE[1] //2 - 200, 300, 200), 1)
+                        pygame.display.update()
             else:
-                grid[mouseX][mouseY].marked = False
-                colour_cell(mouseX, mouseY, colors.white, screen=screen, CELL_SIZE=CELL_SIZE)
-                reveal_zeros(mouseX, mouseY, grid, screen, CELL_SIZE, FONT, GRID_SIZE)
-                if check_win(grid):
-                    for i, row in enumerate(grid):
+                gs.grid[mouseX][mouseY].marked = False
+                colour_cell(mouseX, mouseY, colors.white, screen=gs.screen, CELL_SIZE=gs.CELL_SIZE)
+                reveal_zeros(mouseX, mouseY, gs.grid, gs.screen, gs.CELL_SIZE, gs.FONT, gs.GRID_SIZE)
+                if check_win(gs.grid):
+                    for i, row in enumerate(gs.grid):
                         for j, tile in enumerate(row):
                             if tile.bomb:
-                                colour_cell(i, j, colors.green, CELL_SIZE=CELL_SIZE)
+                                colour_cell(i, j, colors.green, CELL_SIZE=gs.CELL_SIZE)
                     print("You Win!")
                 
 
         elif button == 3:
-            if grid[mouseX][mouseY].revealed:
+            if gs.grid[mouseX][mouseY].revealed:
                 return
-            marked = grid[mouseX][mouseY].marked
-            check_win(grid)
+            marked = gs.grid[mouseX][mouseY].marked
+            check_win(gs.grid)
             if not marked:
-                grid[mouseX][mouseY].revealed = False
-                if marked_bombs == NUM_BOMBS:
+                gs.grid[mouseX][mouseY].revealed = False
+                if gs.marked_bombs == gs.NUM_BOMBS:
                     return
-                colour_cell(mouseX, mouseY, colors.flagged, screen=screen, CELL_SIZE=CELL_SIZE)
-                marked_bombs += 1
+                colour_cell(mouseX, mouseY, colors.flagged, screen=gs.screen, CELL_SIZE=gs.CELL_SIZE)
+                gs.marked_bombs += 1
             else:
-                colour_cell(mouseX, mouseY, colors.white, screen=screen, CELL_SIZE=CELL_SIZE)
-                marked_bombs -= 1
+                colour_cell(mouseX, mouseY, colors.white, screen=gs.screen, CELL_SIZE=gs.CELL_SIZE)
+                gs.marked_bombs -= 1
 
-            marked = not(grid[mouseX][mouseY].marked)
-            grid[mouseX][mouseY].marked = marked
+            marked = not(gs.grid[mouseX][mouseY].marked)
+            gs.grid[mouseX][mouseY].marked = marked
 
             
-            label, label_rect = text_objects(f"{str(marked_bombs).zfill(2)}/{NUM_BOMBS}", FONT, colors.black, colors.mainbg)
-            label_rect = (WINDOW_SIZE[0] - 180, WINDOW_SIZE[1] - 450)
-            screen.blit(label, label_rect)
-
+            pygame.display.set_caption(f"PySweeper - {gs.difficulty} - Bombs: {str(game_state.marked_bombs).zfill(2)}/{game_state.NUM_BOMBS}")
+            
     pygame.display.update()
 
 
-NUM_BOMBS, CELL_SIZE, GRID_SIZE, WINDOW_SIZE, FONT, screen, grid = new_game()
+# ----------------------------------------------------- #
+
+
+
+difficulty = "EASY"
+
+game_state = GameState(difficulty)
+
+pygame.init()
+pygame.font.init()
+
+new_game(game_state)
+game_state.buttons = draw_menu(game_state)  # <-- Assign returned buttons list
+
+
 
 while True:
     for event in pygame.event.get():
@@ -112,15 +99,15 @@ while True:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_press(event, grid, GRID_SIZE)
+            mouse_press(event, game_state)
 
-        pos = pygame.mouse.get_pos()
+        mouse_x, mouse_y = pygame.mouse.get_pos()
         pressed = pygame.mouse.get_pressed()
-        if inButtonReset(pos, WINDOW_SIZE):
-            draw_button_1((WINDOW_SIZE[0] - 180, 25, 125, 50), colors.blue, screen, FONT)
-            if pressed[0]:
-                NUM_BOMBS, CELL_SIZE, GRID_SIZE, WINDOW_SIZE, FONT, screen, grid = new_game()
-        else:
-            draw_button_1((WINDOW_SIZE[0] - 180, 25, 125, 50), colors.darkBlue, screen, FONT)
-
-
+        
+        for btn in game_state.buttons:
+            if btn.is_hovered(mouse_x, mouse_y):
+                btn.draw(game_state.screen, game_state.FONT, color=colors.cyan)
+                if pressed[0]:
+                    btn.click()
+            else:
+                btn.draw(game_state.screen, game_state.FONT)
